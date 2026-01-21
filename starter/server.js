@@ -43,6 +43,13 @@ const server = http.createServer((req, res) => {
         } else if (req.url.startsWith('/styles/')) {
             // GET /styles/* -> public/styles/<file>
             filePath = path.join(PUBLIC_DIR, req.url);
+            
+            // Prevent path traversal attacks
+            const normalizedPath = path.normalize(filePath);
+            if (!normalizedPath.startsWith(PUBLIC_DIR)) {
+                handle404(res);
+                return;
+            }
         } else {
             // Unknown path -> 404
             handle404(res);
