@@ -82,6 +82,15 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(payload));
       return;
     }
+if (req.method === 'GET' && urlPath === '/api/version') {
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify({
+    ok: true,
+    version: "render-check-1",
+    pages: Array.from(PAGES.keys())
+  }));
+  return;
+}
 
     // Only serve pages/static content for GET
     if (req.method !== 'GET') {
