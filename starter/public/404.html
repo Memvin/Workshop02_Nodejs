@@ -1,38 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Not Found</title>
-    <link rel="stylesheet" href="/styles/style.css">
-    <style>
-        .error-container {
-            text-align: center;
-            padding: 3rem;
-        }
-        .error-code {
-            font-size: 5rem;
-            color: #e8491d;
-            margin-bottom: 1rem;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Page Missing</title>
+  <link rel="stylesheet" href="/styles/style.css">
+  <style>
+    .error-wrapper{
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+
+    .error-number{
+      font-size: 6rem;
+      font-weight: 700;
+      color: #E7AFC2;
+      letter-spacing: 4px;
+      margin-bottom: 0.5rem;
+    }
+
+    .error-wrapper h2{
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    .error-wrapper p{
+      margin-bottom: 1.2rem;
+    }
+
+    .error-wrapper a{
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.6rem 1.4rem;
+      border-radius: 999px;
+      text-decoration: none;
+      color: #ffffff;
+      background: #E7AFC2;
+      transition: background 0.2s ease;
+    }
+
+    .error-wrapper a:hover{
+      background: #F4C9D6;
+    }
+  </style>
 </head>
+
 <body>
-    <header>
-        <h1>Page Not Found</h1>
-        <nav>
-            <a href="/">Home</a>
-            <a href="/about">About</a>
-            <a href="/contact">Contact</a>
-        </nav>
-    </header>
-    <main>
-        <div class="error-container">
-            <div class="error-code">404</div>
-            <h2>Oops! Page not found</h2>
-            <p>The page you are looking for doesn't exist or has been moved.</p>
-            <p><a href="/">Go back to home</a></p>
-        </div>
-    </main>
+  <header>
+    <h1>Sorry, this page isn’t here</h1>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="error-wrapper">
+      <div class="error-number">404</div>
+      <h2>We can’t seem to find that page</h2>
+      <p>It may have been moved, renamed, or never existed.</p>
+      <p>You can return to the homepage to keep browsing.</p>
+      <a href="/">Back to Home</a>
+    </section>
+  </main>
 </body>
 </html>

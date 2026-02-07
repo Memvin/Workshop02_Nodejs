@@ -1,168 +1,124 @@
 const http = require('http');
-const fs = require('fs');
+const fs = require('fs/promises');
 const path = require('path');
 
-const PORT = 3000;
-const PUBLIC_DIR = path.join(__dirname, 'public');
+const PORT = process.env.PORT || 3000;
+const WEB_ROOT = path.join(__dirname, 'public');
 
-// MIME types for different file extensions
-const MIME_TYPES = {
-    '.html': 'text/html',
-    '.css': 'text/css',
-    '.js': 'text/javascript',
-    '.json': 'application/json'
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon'
 };
 
-// Create HTTP server
-const server = http.createServer((req, res) => {
-    console.log(`${req.method} ${req.url}`);
+const PAGES = new Map([
+  ['/', 'index.html'],
+  ['/about', 'about.html'],
+  ['/contact', 'contact.html']
+]);
+
+function safeJoin(rootDir, urlPath) {
+  // Decode URL safely and strip query string
+  const clean = decodeURIComponent(urlPath.split('?')[0]);
+
+  // Normalize and prevent traversal
+  const joined = path.join(rootDir, clean);
+  const normalized = path.normalize(joined);
+
+  if (!normalized.startsWith(rootDir)) return null;
+  return normalized;
+}
+
+async function sendFile(res, absolutePath, statusCode = 200) {
+  const ext = path.extname(absolutePath).toLowerCase();
+  const type = MIME[ext] || 'application/octet-stream';
+
+  const data = await fs.readFile(absolutePath);
+  res.writeHead(statusCode, { 'Content-Type': type });
+  res.end(data);
+}
+
+async function sendNotFound(res) {
+  const notFoundPage = path.join(WEB_ROOT, '404.html');
+  try {
+    await sendFile(res, notFoundPage, 404);
+  } catch {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('404 - Not Found');
+  }
+}
+
+async function sendServerError(res, err) {
+  console.error(err);
+
+  const errorPage = path.join(WEB_ROOT, '500.html');
+  try {
+    await sendFile(res, errorPage, 500);
+  } catch {
+    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('500 - Server Error');
+  }
+}
+
+const server = http.createServer(async (req, res) => {
+  console.log(`${req.method} ${req.url}`);
+
+  try {
+    const urlPath = (req.url || '/').split('?')[0];
+
+    // API endpoint
+    if (req.method === 'GET' && urlPath === '/api/time') {
+      const payload = {
+        datetime: new Date().toISOString(),
+        timestamp: Date.now()
+      };
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(payload));
+      return;
+    }
+
+    // Only serve pages/static content for GET
+    if (req.method !== 'GET') {
+      res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('405 - Method Not Allowed');
+      return;
+    }
+
+    // Page routes
+    if (PAGES.has(urlPath)) {
+      const pageFile = PAGES.get(urlPath);
+      const pagePath = path.join(WEB_ROOT, pageFile);
+      await sendFile(res, pagePath, 200);
+      return;
+    }
+
+    // Static files   
+    const staticPath = safeJoin(WEB_ROOT, urlPath);
+    if (!staticPath) {
+      await sendNotFound(res);
+      return;
+    }
 
     try {
-        // ========================================
-        // TODO: Task 6 (Bonus) - API Endpoint
-        // ========================================
-        // Create a /api/time endpoint that returns current date/time as JSON
-        // Uncomment and complete the code below:
-        
-        if (req.url === '/api/time' && req.method === 'GET') {
-            const currentDateTime = new Date().toISOString();
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ 
-                datetime: currentDateTime,
-                timestamp: Date.now()
-            }));
-            return;
-        }
-
-        // ========================================
-        // TODO: Task 2 - Route Mapping
-        // ========================================
-        // Map URLs to HTML files in the public folder
-        // Complete the if-else chain below:
-        
-        let filePath;
-
-        if (req.url === '/') {
-            filePath = path.join(PUBLIC_DIR, 'index.html');
-        } else if (req.url === '/about') {
-            filePath = path.join(PUBLIC_DIR, 'about.html');
-        } else if (req.url === '/contact') {
-            filePath = path.join(PUBLIC_DIR, 'contact.html');
-        }
-
-        // ========================================
-        // TODO: Task 4 - Serve CSS Files
-        // ========================================
-        // Handle requests for CSS files from /styles/ folder
-        // Uncomment and complete the security check:
-        
-        else if (req.url.startsWith('/styles/')) {
-            filePath = path.join(PUBLIC_DIR, req.url);
-            
-            // Security: Prevent path traversal attacks (../ in URL)
-            const normalizedPath = path.normalize(filePath);
-            if (!normalizedPath.startsWith(PUBLIC_DIR)) {
-                handle404(res);
-                return;
-            }
-        }
-
-        else {
-            handle404(res);
-            return;
-        }
-
-        // NOTE: Do NOT add another "else" here while the CSS block above is commented.
-        // The 404 handling is already done in the routing chain above.
-
-        // ========================================
-        // TODO: Task 3 - Serve Files
-        // ========================================
-        // Read the file and send it to the client
-        // Complete the code below:
-        
-        // Step 1: Get the file extension (e.g., '.html', '.css')
-        const extname = path.extname(filePath);
-        
-        // Step 2: Get the content type from MIME_TYPES object
-        const contentType = MIME_TYPES[extname] || 'text/html';
-
-        // Step 3: Read the file
-        fs.readFile(filePath, (err, content) => {
-            if (err) {
-                if (err.code === 'ENOENT') {
-                    // File not found
-                    handle404(res);
-                } else {
-                    // Server error
-                    handleServerError(res, err);
-                }
-            } else {
-                // Send success response (Task 3)
-                res.writeHead(200, { 'Content-Type': contentType });
-                res.end(content);
-            }
-        });
-
-    } catch (error) {
-        // Catch any unexpected errors
-        handleServerError(res, error);
+      await sendFile(res, staticPath, 200);
+    } catch (e) {
+      if (e && e.code === 'ENOENT') {
+        await sendNotFound(res);
+      } else {
+        await sendServerError(res, e);
+      }
     }
+  } catch (err) {
+    await sendServerError(res, err);
+  }
 });
 
-
-// ========================================
-// TODO: Task 5 - Error Handling Functions
-// ========================================
-
-// Function to handle 404 errors (Page Not Found)
-function handle404(res) {
-    // Step 1: Create the path to 404.html
-    const notFoundPath = path.join(PUBLIC_DIR, '404.html');
-    
-    // Step 2: Try to read and serve the 404.html file
-    fs.readFile(notFoundPath, (err, content) => {
-        if (err) {
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('404 - Page Not Found');
-        } else {
-            res.writeHead(404, { 'Content-Type': 'text/html' });
-            res.end(content);
-        }
-    });
-}
-
-
-function handleServerError(res, error) {
-    // Step 1: Log the error to the console
-    console.error(error);
-    
-    // Step 2: Create the path to 500.html
-    const serverErrorPath = path.join(PUBLIC_DIR, '500.html');
-    
-    // Step 3: Try to read and serve the 500.html file
-    fs.readFile(serverErrorPath, (err, content) => {
-        if (err) {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('500 - Internal Server Error');
-        } else {
-            res.writeHead(500, { 'Content-Type': 'text/html' });
-            res.end(content);
-        }
-    });
-}
-
-
-
-// ========================================
-// Task 1 - Start the Server
-// ========================================
 server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-
-    // OPTIONAL (add AFTER Task 2 is complete):
-    // console.log('Available routes:');
-    // console.log('  GET /              -> index.html');
-    // console.log('  GET /about         -> about.html');
-    // console.log('  GET /contact       -> contact.html');
+  console.log(`Server running at http://localhost:${PORT}`);
 });
