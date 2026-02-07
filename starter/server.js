@@ -100,12 +100,9 @@ const server = http.createServer((req, res) => {
                     handleServerError(res, err);
                 }
             } else {
-                // TODO: Send success response
-                // Use res.writeHead() to set status code 200 and Content-Type header
-                // Use res.end() to send the file content
-                
-                // res.writeHead(200, { 'Content-Type': ??? });
-                // res.end(???, 'utf-8');
+                // Send success response (Task 3)
+                res.writeHead(200, { 'Content-Type': contentType });
+                res.end(content);
             }
         });
 
@@ -149,7 +146,6 @@ function handleServerError(res, error) {
     // Step 1: Log the error to the console
     // TODO: Use console.error() to log the error
     
-    
     // Step 2: Create the path to 500.html
     const serverErrorPath = path.join(PUBLIC_DIR, '500.html');
     
@@ -157,7 +153,6 @@ function handleServerError(res, error) {
     // TODO: Similar to handle404, read serverErrorPath and serve it
     // If successful: Send 500 status with the HTML content
     // If failed: Send 500 status with plain text "500 - Internal Server Error"
-    
 }
 
 
