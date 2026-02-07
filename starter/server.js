@@ -123,37 +123,37 @@ function handle404(res) {
     const notFoundPath = path.join(PUBLIC_DIR, '404.html');
     
     // Step 2: Try to read and serve the 404.html file
-    // TODO: Use fs.readFile() to read notFoundPath
-    // If successful: Send 404 status with the HTML content
-    // If failed: Send 404 status with plain text "404 - Page Not Found"
-    
-    // Example structure:
-    /*
     fs.readFile(notFoundPath, (err, content) => {
         if (err) {
             res.writeHead(404, { 'Content-Type': 'text/plain' });
             res.end('404 - Page Not Found');
         } else {
             res.writeHead(404, { 'Content-Type': 'text/html' });
-            res.end(content, 'utf-8');
+            res.end(content);
         }
     });
-    */
 }
 
-// Function to handle 500 errors (Server Error)
+
 function handleServerError(res, error) {
     // Step 1: Log the error to the console
-    // TODO: Use console.error() to log the error
+    console.error(error);
     
     // Step 2: Create the path to 500.html
     const serverErrorPath = path.join(PUBLIC_DIR, '500.html');
     
     // Step 3: Try to read and serve the 500.html file
-    // TODO: Similar to handle404, read serverErrorPath and serve it
-    // If successful: Send 500 status with the HTML content
-    // If failed: Send 500 status with plain text "500 - Internal Server Error"
+    fs.readFile(serverErrorPath, (err, content) => {
+        if (err) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('500 - Internal Server Error');
+        } else {
+            res.writeHead(500, { 'Content-Type': 'text/html' });
+            res.end(content);
+        }
+    });
 }
+
 
 
 // ========================================
